@@ -27,23 +27,28 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 
 class MainActivity : ComponentActivity() {
+    private lateinit var database: MealDatabase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val mealDB: MealDatabase by lazy {
-            Room.databaseBuilder(
-                applicationContext,
-                MealDatabase::class.java,
-                "meals.db"
-            ).build()
-        }
+        database = Room.databaseBuilder(
+            applicationContext,
+            MealDatabase::class.java,
+            "meals.db"
+        ).build()
 
         setContent {
             MBSNWAbgabeTheme {
-                AppNavigation(mealDB)
+                AppNavigation(database)
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        database.close()
     }
 }
 

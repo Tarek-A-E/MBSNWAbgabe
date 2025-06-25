@@ -29,12 +29,15 @@ import java.util.Locale
 import java.util.Date
 import androidx.camera.core.CameraSelector
 import com.example.mbsnw_abgabe.data.MealDatabase
+import com.example.mbsnw_abgabe.data.MealRepository
+import kotlinx.coroutines.Dispatchers
 
 @Composable
 fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val repository = remember { MealRepository(mealDB.dao) }
     val scope = rememberCoroutineScope()
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
@@ -123,13 +126,15 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
                                             if (barcodeResults != null && barcodeResults.isNotEmpty()) {
                                                 val barcode = barcodeResults[0]
                                                 val scannedValue = barcode.rawValue
+                                                // Update the scanning callback:
                                                 if (scannedValue != null) {
                                                     val mealTemplate = barcodeToMeal[scannedValue]
                                                     if (mealTemplate != null) {
                                                         val scannedMeal = mealTemplate.copy(
                                                             date = dateFormat.format(Date())
                                                         )
-                                                        scope.launch {
+                                                        scope.launch(Dispatchers.IO) {
+                                                            repository.addMeal(scannedMeal)
                                                             onMealScanned(scannedMeal)
                                                         }
                                                     }
