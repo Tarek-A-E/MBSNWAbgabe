@@ -29,6 +29,6 @@ fun AppNavigation(mealDB: MealDatabase) {
         }
         composable("bluetooth") { BluetoothPage() }
 
-        composable("weekoverview") { WeekOverview() }
+        composable("weekoverview") { WeekOverview(mealDB) }
     }
 }
