@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MBSNWAbgabeTheme {
-                TagesuebersichtScreen()
+                AppNavigation()
             }
         }
     }
@@ -43,7 +43,11 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TagesuebersichtScreen() {
+fun TagesuebersichtScreen(
+    onScanClick: () -> Unit,
+    onBluetoothClick: () -> Unit,
+    onWeeklyClick: () -> Unit
+) {
     var usedCalories by remember { mutableStateOf(800) }
     val goalCalories = 2000
     val remainingCalories = goalCalories - usedCalories
@@ -116,9 +120,9 @@ fun TagesuebersichtScreen() {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                ActionButton(text = "📷  Scan", onClick = { /* TODO */ })
-                ActionButton(text = "🔵  Bluetooth", onClick = { /* TODO */ })
-                ActionButton(text = "📅  Wochenübersicht", onClick = { /* TODO */ })
+                ActionButton(text = "📷  Scan", onClick = { onScanClick() })
+                ActionButton(text = "🔵  Bluetooth", onClick = { onBluetoothClick() })
+                ActionButton(text = "📅  Wochenübersicht", onClick = { onWeeklyClick() })
             }
         }
     }
@@ -141,6 +145,6 @@ fun ActionButton(text: String, onClick: () -> Unit) {
 @Composable
 fun TagesuebersichtPreview() {
     MBSNWAbgabeTheme {
-        TagesuebersichtScreen()
+        TagesuebersichtScreen( onScanClick = {}, onBluetoothClick = {}, onWeeklyClick = {} )
     }
 }
