@@ -69,76 +69,13 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
         hasPermission = granted
     }
 
-    // Request permission on first composition if not granted
     LaunchedEffect(Unit) {
         if (!hasPermission) {
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    // Camera implementation
-    if (hasPermission) {
-        AndroidView(
-            factory = { context ->
-                val previewView = PreviewView(context)
-
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
-                    }
-
-                    val imageAnalyzer = ImageAnalysis.Builder()
-                        .build()
-                        .also { analysis ->
-                            analysis.setAnalyzer(
-                                ContextCompat.getMainExecutor(context),
-                                MlKitAnalyzer(
-                                    listOf(BarcodeScanning.getClient()),
-                                    ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL,
-                                    ContextCompat.getMainExecutor(context)
-                                ) { result ->
-                                    val barcodeResults = result.getValue(BarcodeScanning.getClient())
-                                    if (barcodeResults != null && barcodeResults.isNotEmpty()) {
-                                        val barcode = barcodeResults[0]
-                                        val scannedValue = barcode.rawValue
-                                        if (scannedValue != null) {
-                                            val mealTemplate = barcodeToMeal[scannedValue]
-                                            if (mealTemplate != null) {
-                                                // Create new meal with current date
-                                                val scannedMeal = mealTemplate.copy(
-                                                    date = dateFormat.format(Date())
-                                                )
-                                                scope.launch {
-                                                    onMealScanned(scannedMeal)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            )
-                        }
-
-                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageAnalyzer
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }, ContextCompat.getMainExecutor(context))
-
-                previewView
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-    }
+    val barcodeScanner = remember { BarcodeScanning.getClient() }
 
     Column(
         modifier = Modifier
@@ -154,6 +91,10 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
 
         Box(
             modifier = Modifier
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 16.dp
+                )
                 .fillMaxWidth()
                 .height(400.dp)
         ) {
@@ -168,12 +109,45 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
                                 it.setSurfaceProvider(previewView.surfaceProvider)
                             }
 
-                            val cameraSelector = androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA
+                            val imageAnalyzer = ImageAnalysis.Builder()
+                                .build()
+                                .also { analysis ->
+                                    analysis.setAnalyzer(
+                                        ContextCompat.getMainExecutor(context),
+                                        MlKitAnalyzer(
+                                            listOf(barcodeScanner),
+                                            ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL,
+                                            ContextCompat.getMainExecutor(context)
+                                        ) { result ->
+                                            val barcodeResults = result.getValue(barcodeScanner)
+                                            if (barcodeResults != null && barcodeResults.isNotEmpty()) {
+                                                val barcode = barcodeResults[0]
+                                                val scannedValue = barcode.rawValue
+                                                if (scannedValue != null) {
+                                                    val mealTemplate = barcodeToMeal[scannedValue]
+                                                    if (mealTemplate != null) {
+                                                        val scannedMeal = mealTemplate.copy(
+                                                            date = dateFormat.format(Date())
+                                                        )
+                                                        scope.launch {
+                                                            onMealScanned(scannedMeal)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
                             try {
                                 cameraProvider.unbindAll()
                                 cameraProvider.bindToLifecycle(
-                                    lifecycleOwner, cameraSelector, preview
+                                    lifecycleOwner,
+                                    cameraSelector,
+                                    preview,
+                                    imageAnalyzer
                                 )
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -191,16 +165,12 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
 
         Button(
             onClick = {
-                if (hasPermission) {
-                    println("📷 Barcode Scan gestartet (Platzhalter)")
-                    // TODO: Start scanning logic and save to DB
-                } else {
-                    println("❌ Keine Kamera-Berechtigung")
+                if (!hasPermission) {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
                 }
             }
         ) {
-            Text("📷 Scan starten")
+            Text(if (hasPermission) "📷 Scanning..." else "📷 Kamera aktivieren")
         }
     }
 }
