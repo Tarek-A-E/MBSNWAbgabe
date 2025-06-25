@@ -19,6 +19,12 @@ import androidx.compose.ui.unit.sp
 import androidx.room.Room
 import com.example.mbsnw_abgabe.data.MealDatabase
 import com.example.mbsnw_abgabe.ui.theme.MBSNWAbgabeTheme
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +41,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MBSNWAbgabeTheme {
-                AppNavigation()
+                AppNavigation(mealDB)
             }
         }
     }

@@ -4,9 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mbsnw_abgabe.data.MealDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(mealDB: MealDatabase) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
@@ -16,8 +20,13 @@ fun AppNavigation() {
                 onWeeklyClick = { navController.navigate("weekoverview") }
             )
         }
-        composable("camera") { CameraPage() }
-
+        composable("camera") {
+            CameraPage(mealDB, onMealScanned = { meal ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    mealDB.dao.insertMeal(meal)
+                }
+            })
+        }
         composable("bluetooth") { BluetoothPage() }
 
         composable("weekoverview") { WeekOverview() }
