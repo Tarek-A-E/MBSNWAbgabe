@@ -2,6 +2,7 @@ package com.example.mbsnw_abgabe
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -35,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
 import com.example.mbsnw_abgabe.data.Meal
 import com.example.mbsnw_abgabe.data.MealDatabase
 import com.example.mbsnw_abgabe.data.MealRepository
@@ -49,6 +52,7 @@ import java.util.Locale
 fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
+    val navController = rememberNavController()
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val repository = remember { MealRepository(mealDB.dao) }
     val scope = rememberCoroutineScope()
@@ -93,6 +97,8 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
 
     val barcodeScanner = remember { BarcodeScanning.getClient() }
 
+    var hasScanned by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,14 +113,11 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
 
         Box(
             modifier = Modifier
-                .padding(
-                    horizontal = 16.dp,
-                    vertical = 16.dp
-                )
+                .padding(horizontal = 16.dp, vertical = 16.dp)
                 .fillMaxWidth()
                 .height(400.dp)
         ) {
-            if (hasPermission) {
+            if (hasPermission && !hasScanned) {  // Only show scanner if not yet scanned
                 AndroidView(
                     factory = { context ->
                         val previewView = PreviewView(context)
@@ -135,20 +138,30 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
                                             ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL,
                                             ContextCompat.getMainExecutor(context)
                                         ) { result ->
-                                            val barcodeResults = result.getValue(barcodeScanner)
-                                            if (barcodeResults != null && barcodeResults.isNotEmpty()) {
-                                                val barcode = barcodeResults[0]
-                                                val scannedValue = barcode.rawValue
-                                                // Update the scanning callback:
-                                                if (scannedValue != null) {
-                                                    val mealTemplate = barcodeToMeal[scannedValue]
-                                                    if (mealTemplate != null) {
-                                                        val scannedMeal = mealTemplate.copy(
-                                                            date = dateFormat.format(Date())
-                                                        )
-                                                        scope.launch(Dispatchers.IO) {
-                                                            repository.addMeal(scannedMeal)
-                                                            onMealScanned(scannedMeal)
+                                            if (!hasScanned) {  // Only process if not yet scanned
+                                                val barcodeResults = result.getValue(barcodeScanner)
+                                                if (barcodeResults != null && barcodeResults.isNotEmpty()) {
+                                                    val barcode = barcodeResults[0]
+                                                    val scannedValue = barcode.rawValue
+                                                    if (scannedValue != null) {
+                                                        val mealTemplate = barcodeToMeal[scannedValue]
+                                                        if (mealTemplate != null) {
+                                                            val scannedMeal = mealTemplate.copy(
+                                                                date = dateFormat.format(Date())
+                                                            )
+                                                            scope.launch(Dispatchers.IO) {
+                                                                try {
+                                                                    repository.addMeal(scannedMeal)
+                                                                    onMealScanned(scannedMeal)
+                                                                    hasScanned = true  // Mark as scanned
+                                                                    // Navigate back after successful scan
+                                                                    scope.launch(Dispatchers.Main) {
+                                                                        navController.popBackStack()
+                                                                    }
+                                                                } catch (e: Exception) {
+                                                                    Log.e("Database", "Error adding meal: ${e.message}")
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -176,6 +189,8 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
                     },
                     modifier = Modifier.fillMaxSize()
                 )
+            } else if (hasScanned) {
+                Text("Barcode successfully scanned!")
             } else {
                 Text("Kamera-Berechtigung nicht erteilt.")
             }
