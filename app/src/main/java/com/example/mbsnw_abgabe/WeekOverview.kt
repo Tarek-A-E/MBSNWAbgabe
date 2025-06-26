@@ -7,6 +7,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.launch
 import com.example.mbsnw_abgabe.data.MealDatabase
 import java.text.SimpleDateFormat
@@ -19,8 +21,11 @@ import java.util.*
 
 
 @Composable
-fun WeekBarChart(caloriesPerDay: Map<String, Double>, scope: CoroutineScope, repository: MealRepository) {
-    // Wochentage bestimmen
+fun WeekBarChart(
+    caloriesPerDay: Map<String, Double>,
+    scope: CoroutineScope,
+    repository: MealRepository
+) {
     val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val calendar = Calendar.getInstance()
     calendar.firstDayOfWeek = Calendar.MONDAY
@@ -31,9 +36,8 @@ fun WeekBarChart(caloriesPerDay: Map<String, Double>, scope: CoroutineScope, rep
         date
     }
 
-    // Kalorien pro Tag berechnen
     val values = daysOfWeek.map { date -> caloriesPerDay[date] ?: 0.0 }
-    val maxCal = (values.maxOrNull() ?: 1.0).coerceAtLeast(1.0)
+    val maxCal = 4000.0 // Feste Skalierung für die Hilfslinien
 
     Row(
         Modifier
@@ -62,91 +66,94 @@ fun WeekBarChart(caloriesPerDay: Map<String, Double>, scope: CoroutineScope, rep
             modifier = Modifier
                 .height(180.dp)
                 .fillMaxWidth()
-        ) {
+        )
+        {
+            val barColor = MaterialTheme.colorScheme.primary
+
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp)
                     .align(Alignment.Center)
             ) {
-                val barWidth = size.width / 9
-                val right = size.width - barWidth
+                val barCount = 8
+                val barWidth = size.width / barCount
                 val bottom = size.height
-                val top = 0f
+                val maxCal = 4000f
 
                 // Y-Achse
                 drawLine(
                     color = Color.Gray,
-                    start = Offset(barWidth, top),
+                    start = Offset(barWidth, 0f),
                     end = Offset(barWidth, bottom),
-                    strokeWidth = 2f
+                    strokeWidth = 4f
                 )
                 // X-Achse
                 drawLine(
                     color = Color.Gray,
-                    start = Offset(barWidth, bottom),
-                    end = Offset(right, bottom),
-                    strokeWidth = 2f
+                    start = Offset(barWidth, bottom - 1),
+                    end = Offset(size.width, bottom - 1),
+                    strokeWidth = 4f
                 )
-                // Hilfslinien und Werte
-                for (i in 1..4) {
-                    val y = bottom - (i * (size.height / 4))
+
+                // Hilfslinien bei 3000, 2000, 1000
+                listOf(4000f, 3000f, 2000f, 1000f).forEach { value ->
+                    val y = bottom - (value / maxCal) * size.height
                     drawLine(
                         color = Color.LightGray,
                         start = Offset(barWidth, y),
-                        end = Offset(right, y),
-                        strokeWidth = 1f
+                        end = Offset(size.width, y),
+                        strokeWidth = 3f
                     )
                 }
-                // Balken zeichnen
-                values.forEachIndexed { idx, cal ->
-                    val barHeight =
-                        ((cal / maxCal) * size.height).toFloat().coerceAtMost(size.height)
-                    drawRect(
-                        color = Color(0xFF90CAF9),
-                        topLeft = Offset(
-                            x = barWidth * (idx + 1),
-                            y = size.height - barHeight
-                        ),
-                        size = androidx.compose.ui.geometry.Size(
-                            width = barWidth,
-                            height = barHeight
+
+                values.forEachIndexed { index, value ->
+                    if (index < 7) {
+                        val barHeight =
+                            ((value / maxCal) * size.height).toFloat().coerceAtLeast(2.dp.toPx())
+                        drawRect(
+                            color = barColor,
+                            topLeft = Offset(
+                                (index + 1) * barWidth + barWidth * 0.15f,
+                                bottom - barHeight
+                            ),
+                            size = androidx.compose.ui.geometry.Size(barWidth * 0.7f, barHeight)
                         )
-                    )
+                    }
                 }
             }
         }
     }
 
-    // Optional: Wochentagsnamen darunter anzeigen
+    val yAxisWidth = 40.dp
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val barLabels = listOf(" ", "Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+    val chartWidth = screenWidth - yAxisWidth
+
     Row(
-        Modifier.fillMaxWidth(),
+        Modifier
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.width(40.dp)) // Platz für Y-Achse
+        Spacer(modifier = Modifier.width(yAxisWidth)) // Platz für Y-Achse
         Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            modifier = Modifier
+                .width(chartWidth)
+                .height(24.dp),
+            horizontalArrangement = Arrangement.Start
         ) {
-            listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So").forEach {
-                Text(it, style = MaterialTheme.typography.labelSmall)
+            barLabels.forEach {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Text(it, style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
     }
-    // --- BEGINN: Button zum Leeren der Datenbank ---
-    Button(
-        onClick = {
-            scope.launch {
-                repository.deleteAllMeals()
-            }
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp)
-    ) {
-        Text("Datenbank leeren")
-    }
-// --- ENDE: Button zum Leeren der Datenbank ---
 }
 
 @Composable
@@ -172,6 +179,24 @@ fun WeekOverview(mealDB: MealDatabase) {
         }
     }
 
+    var caloriesPerDay by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+    val durchschnitt = if (caloriesPerDay.isNotEmpty()) caloriesPerDay.values.sum() / caloriesPerDay.size else 0.0
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            repository.getAllMeals().collect { meals ->
+                val grouped = meals.filterNotNull().groupBy { meal ->
+                    meal.date // oder ggf. meal.date.substring(0, 10) für yyyy-MM-dd
+                }
+                val calMap = grouped.mapValues { entry ->
+                    entry.value.sumOf { it.cal }
+                }
+                caloriesPerDay = calMap
+            }
+        }
+    }
+
+
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -193,18 +218,66 @@ fun WeekOverview(mealDB: MealDatabase) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Kalorienverbrauch pro Woche",
+                        text = "Wochenübersicht",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
             // Hier den Graphen einbinden
             WeekBarChart(weekCaloriesMap, scope, repository)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card (
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (durchschnitt == 0.0 || weekCaloriesMap.isEmpty() || durchschnitt.isNaN()) {
+                        Text(
+                            text = "Keine Mahlzeiten eingetragen.",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        // Durchschnitt pro Tag
+                        Text(
+                            text = "Kalorienverbrauch pro Woche: %1f kcal".format(durchschnitt),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        repository.deleteAllMeals()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text("Datenbank kys")
+            }
         }
     }
 }
+
+
 
 fun isInCurrentWeek(dateString: String): Boolean {
     val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
