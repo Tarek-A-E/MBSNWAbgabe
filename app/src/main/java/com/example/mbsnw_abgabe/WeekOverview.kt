@@ -160,42 +160,43 @@ fun WeekBarChart(
 fun WeekOverview(mealDB: MealDatabase) {
     val repository = remember { com.example.mbsnw_abgabe.data.MealRepository(mealDB.dao) }
     val scope = rememberCoroutineScope()
-    var weekCaloriesMap by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
 
+    val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    val isoFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            repository.getAllMeals().collect { meals ->
-                val grouped = meals.filterNotNull().groupBy { meal ->
-                    getYearWeekString(meal.date)
-                }
-                val currentWeekMeals = meals.filterNotNull().groupBy { meal ->
-                    isInCurrentWeek(meal.date)
-                }
-                weekCaloriesMap = grouped.mapValues { entry ->
-                    entry.value.sumOf { it.cal }
-                }.toSortedMap(compareByDescending { it })
-            }
-        }
+    // State für aktuellen Wochenstart (Montag)
+    var weekStart by remember {
+        mutableStateOf(Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.time)
+    }
+    val weekEnd = remember(weekStart) {
+        Calendar.getInstance().apply {
+            time = weekStart
+            add(Calendar.DAY_OF_MONTH, 6)
+        }.time
     }
 
     var caloriesPerDay by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
     val durchschnitt = if (caloriesPerDay.isNotEmpty()) caloriesPerDay.values.sum() / caloriesPerDay.size else 0.0
 
-    LaunchedEffect(Unit) {
+    // Filtere Mahlzeiten für die aktuelle Woche
+    LaunchedEffect(weekStart) {
         scope.launch {
             repository.getAllMeals().collect { meals ->
-                val grouped = meals.filterNotNull().groupBy { meal ->
-                    meal.date // oder ggf. meal.date.substring(0, 10) für yyyy-MM-dd
+                val filtered = meals.filterNotNull().filter { meal ->
+                    val mealDate = isoFormat.parse(meal.date)
+                    mealDate != null && !mealDate.before(weekStart) && !mealDate.after(weekEnd)
                 }
-                val calMap = grouped.mapValues { entry ->
-                    entry.value.sumOf { it.cal }
-                }
-                caloriesPerDay = calMap
+                val grouped = filtered.groupBy { it.date }
+                caloriesPerDay = grouped.mapValues { it.value.sumOf { meal -> meal.cal } }
             }
         }
     }
-
 
     Scaffold { innerPadding ->
         Column(
@@ -226,8 +227,38 @@ fun WeekOverview(mealDB: MealDatabase) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            // Hier den Graphen einbinden
-            WeekBarChart(weekCaloriesMap, scope, repository)
+
+            // Wochen-Navigation
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(onClick = {
+                    weekStart = Calendar.getInstance().apply {
+                        time = weekStart
+                        add(Calendar.DAY_OF_MONTH, -7)
+                    }.time
+                }, modifier = Modifier.weight(1f)
+                ) { Text("<") }
+                Spacer(Modifier.width(16.dp))
+                Text(
+                    "${dateFormat.format(weekStart)} - ${dateFormat.format(weekEnd)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.width(16.dp))
+                Button(onClick = {
+                    weekStart = Calendar.getInstance().apply {
+                        time = weekStart
+                        add(Calendar.DAY_OF_MONTH, 7)
+                    }.time
+                }, modifier = Modifier.weight(1f)
+                ) { Text(">") }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            WeekBarChart(caloriesPerDay, scope, repository)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -242,14 +273,13 @@ fun WeekOverview(mealDB: MealDatabase) {
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (durchschnitt == 0.0 || weekCaloriesMap.isEmpty() || durchschnitt.isNaN()) {
+                    if (durchschnitt == 0.0 || durchschnitt.isNaN()) {
                         Text(
                             text = "Keine Mahlzeiten eingetragen.",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     } else {
-                        // Durchschnitt pro Tag
                         Text(
                             text = "Kalorienverbrauch pro Woche: %1f kcal".format(durchschnitt),
                             style = MaterialTheme.typography.titleMedium,
