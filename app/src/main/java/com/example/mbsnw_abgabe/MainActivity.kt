@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -37,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,10 +90,10 @@ fun TagesuebersichtScreen(
     onWeeklyClick: () -> Unit,
     mealDB: MealDatabase
 ) {
-    var usedCalories by remember { mutableStateOf(800) }
-    val goalCalories = 2000
-    val remainingCalories = goalCalories - usedCalories
-    val progress = usedCalories / goalCalories.toFloat()
+    var goalCalories by remember { mutableStateOf(2000) }
+    var usedCalories by remember { mutableStateOf(0) }
+    var showGoalDialog by remember { mutableStateOf(false) }
+    var newGoalInput by remember { mutableStateOf("") }
 
     // Get today's date in the correct format
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -109,6 +113,54 @@ fun TagesuebersichtScreen(
         }
     }
 
+    // Calculate used calories whenever meals change
+    LaunchedEffect(Unit) {
+        repository.getAllMeals().collect { meals ->
+            todaysMeals = meals
+                .filterNotNull()
+                .filter { it.date == today }
+            usedCalories = todaysMeals.sumOf { it.cal.toInt() }
+        }
+    }
+
+    val remainingCalories = goalCalories - usedCalories
+    val progress = (usedCalories / goalCalories.toFloat()).coerceIn(0f, 1f)
+
+    // Goal setting dialog
+    if (showGoalDialog) {
+        AlertDialog(
+            onDismissRequest = { showGoalDialog = false },
+            title = { Text("Tägliches Kalorienziel setzen") },
+            text = {
+                OutlinedTextField(
+                    value = newGoalInput,
+                    onValueChange = { newGoalInput = it.filter { char -> char.isDigit() } },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = { Text("Tägliche Kalorien") }
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    newGoalInput.toIntOrNull()?.let {
+                        if (it > 0) goalCalories = it
+                    }
+                    showGoalDialog = false
+                    newGoalInput = ""
+                }) {
+                    Text("Ziel setzen")
+                }
+            },
+            dismissButton = {
+                Button(onClick = {
+                    showGoalDialog = false
+                    newGoalInput = ""
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -119,8 +171,8 @@ fun TagesuebersichtScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: Open settings */ }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    IconButton(onClick = { showGoalDialog = true }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Ziel setzen")
                     }
                 }
             )
@@ -148,7 +200,7 @@ fun TagesuebersichtScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Kalorienverbrauch",
+                        text = "Tägliches Ziel: $goalCalories kcal",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
