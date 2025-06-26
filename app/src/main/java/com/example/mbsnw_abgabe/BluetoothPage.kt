@@ -17,11 +17,30 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mbsnw_abgabe.ui.theme.MBSNWAbgabeTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Card
+import androidx.compose.runtime.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 
 @Composable
 fun BluetoothPage() {
 
+    var showDialog by remember { mutableStateOf(false) }
+
+    // Mock Bluetooth devices
+    val mockDevices = remember {
+        listOf(
+            "Xioami Mi Band 7",
+            "Lisa's Airpods Pro",
+            "Iphone 14 Pro",
+            "92:34:43:5F:52:3G"
+        )
+    }
+
+    // Bluetooth Page UI and
     Scaffold() { innerPadding ->
         Column (
             modifier = Modifier
@@ -34,8 +53,53 @@ fun BluetoothPage() {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth()
-            ) { ConnectButton(text = "Connect yourself" , onClick = { /* TODO: Implement Bluetooth connection logic */ } ) }
+            ) { ConnectButton(text = "Connect yourself" , onClick = { showDialog = true } ) }
         }
+    }
+
+    // Bluetooth connection Pop-Up Mockup
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Available Devices", style = MaterialTheme.typography.titleLarge) },
+            text = {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(mockDevices) { device ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(device)
+                                Button(
+                                    onClick = {
+                                        // Mock connection logic
+                                        showDialog = false
+                                    },
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    Text("Connect")
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
     }
 }
 
