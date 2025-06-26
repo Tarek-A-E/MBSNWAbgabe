@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,8 +39,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.room.Room
+import com.example.mbsnw_abgabe.data.Meal
 import com.example.mbsnw_abgabe.data.MealDatabase
+import com.example.mbsnw_abgabe.data.MealRepository
 import com.example.mbsnw_abgabe.ui.theme.MBSNWAbgabeTheme
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import com.example.mbsnw_abgabe.data.MealDao
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var database: MealDatabase
@@ -71,12 +82,31 @@ class MainActivity : ComponentActivity() {
 fun TagesuebersichtScreen(
     onScanClick: () -> Unit,
     onBluetoothClick: () -> Unit,
-    onWeeklyClick: () -> Unit
+    onWeeklyClick: () -> Unit,
+    mealDB: MealDatabase
 ) {
     var usedCalories by remember { mutableStateOf(800) }
     val goalCalories = 2000
     val remainingCalories = goalCalories - usedCalories
     val progress = usedCalories / goalCalories.toFloat()
+
+    // Get today's date in the correct format
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val today = dateFormat.format(Date())
+
+    // Create repository and state for meals
+    val repository = remember { MealRepository(mealDB.dao) }
+    var todaysMeals by remember { mutableStateOf<List<Meal>>(emptyList()) }
+
+    // Collect meals from database
+    LaunchedEffect(Unit) {
+        repository.getAllMeals().collect { meals ->
+            todaysMeals = meals
+                .filterNotNull()
+                .filter { it.date == today }
+                .take(10)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -138,6 +168,54 @@ fun TagesuebersichtScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Today's Meals Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Heutige Mahlzeiten",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    if (todaysMeals.isEmpty()) {
+                        Text(
+                            text = "Keine Mahlzeiten für heute",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        todaysMeals.forEach { meal ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = meal.name,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = "${meal.cal.toInt()} kcal",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // Buttons
@@ -163,13 +241,5 @@ fun ActionButton(text: String, onClick: () -> Unit) {
         shape = MaterialTheme.shapes.medium
     ) {
         Text(text = text, fontSize = 16.sp)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TagesuebersichtPreview() {
-    MBSNWAbgabeTheme {
-        TagesuebersichtScreen( onScanClick = {}, onBluetoothClick = {}, onWeeklyClick = {} )
     }
 }

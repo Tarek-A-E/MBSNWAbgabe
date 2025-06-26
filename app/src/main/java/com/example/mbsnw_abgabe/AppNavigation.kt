@@ -15,9 +15,10 @@ fun AppNavigation(mealDB: MealDatabase) {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             TagesuebersichtScreen(
+                mealDB = mealDB,
                 onScanClick = { navController.navigate("camera") },
                 onBluetoothClick = { navController.navigate("bluetooth") },
-                onWeeklyClick = { navController.navigate("weekoverview") }
+                onWeeklyClick = { navController.navigate("weekoverview") },
             )
         }
         composable("camera") {
@@ -29,6 +30,6 @@ fun AppNavigation(mealDB: MealDatabase) {
         }
         composable("bluetooth") { BluetoothPage() }
 
-        composable("weekoverview") { WeekOverview(mealDB) }
+        composable("weekoverview") { WeekOverview(mealDB = mealDB) }
     }
 }
