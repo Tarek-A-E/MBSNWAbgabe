@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.mbsnw_abgabe.data.Meal
@@ -49,10 +50,9 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
+fun CameraPage(mealDB: MealDatabase,navController: NavController, onMealScanned: (Meal) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
-    val navController = rememberNavController()
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val repository = remember { MealRepository(mealDB.dao) }
     val scope = rememberCoroutineScope()
@@ -151,12 +151,11 @@ fun CameraPage(mealDB: MealDatabase, onMealScanned: (Meal) -> Unit) {
                                                             )
                                                             scope.launch(Dispatchers.IO) {
                                                                 try {
-                                                                    repository.addMeal(scannedMeal)
                                                                     onMealScanned(scannedMeal)
                                                                     hasScanned = true  // Mark as scanned
                                                                     // Navigate back after successful scan
                                                                     scope.launch(Dispatchers.Main) {
-                                                                        navController.popBackStack()
+                                                                        navController.navigate("home")
                                                                     }
                                                                 } catch (e: Exception) {
                                                                     Log.e("Database", "Error adding meal: ${e.message}")

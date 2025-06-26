@@ -22,7 +22,7 @@ fun AppNavigation(mealDB: MealDatabase) {
             )
         }
         composable("camera") {
-            CameraPage(mealDB, onMealScanned = { meal ->
+            CameraPage(mealDB,navController, onMealScanned = { meal ->
                 CoroutineScope(Dispatchers.IO).launch {
                     mealDB.dao.insertMeal(meal)
                 }

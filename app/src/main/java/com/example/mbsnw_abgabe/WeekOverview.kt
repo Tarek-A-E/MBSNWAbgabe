@@ -146,7 +146,7 @@ fun WeekOverview(mealDB: MealDatabase) {
                     getYearWeekString(meal.date)
                 }
                 val currentWeekMeals = meals.filterNotNull().groupBy { meal ->
-                    isInCurrentWeak(meal.date)
+                    isInCurrentWeek(meal.date)
                 }
                 weekCaloriesMap = grouped.mapValues { entry ->
                     entry.value.sumOf { it.cal }
