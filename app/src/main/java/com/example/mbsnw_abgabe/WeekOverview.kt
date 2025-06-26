@@ -13,10 +13,13 @@ import java.text.SimpleDateFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.example.mbsnw_abgabe.data.MealRepository
+import kotlinx.coroutines.CoroutineScope
 import java.util.*
 
+
 @Composable
-fun WeekBarChart(caloriesPerDay: Map<String, Double>) {
+fun WeekBarChart(caloriesPerDay: Map<String, Double>, scope: CoroutineScope, repository: MealRepository) {
     // Wochentage bestimmen
     val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val calendar = Calendar.getInstance()
@@ -130,6 +133,20 @@ fun WeekBarChart(caloriesPerDay: Map<String, Double>) {
             }
         }
     }
+    // --- BEGINN: Button zum Leeren der Datenbank ---
+    Button(
+        onClick = {
+            scope.launch {
+                repository.deleteAllMeals()
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp)
+    ) {
+        Text("Datenbank leeren")
+    }
+// --- ENDE: Button zum Leeren der Datenbank ---
 }
 
 @Composable
@@ -184,7 +201,7 @@ fun WeekOverview(mealDB: MealDatabase) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             // Hier den Graphen einbinden
-            WeekBarChart(weekCaloriesMap)
+            WeekBarChart(weekCaloriesMap, scope, repository)
         }
     }
 }

@@ -14,6 +14,9 @@ interface MealDao {
     @Delete
     suspend fun deleteMeal(meal: Meal)
 
+    @Query("DELETE FROM Meal")
+    suspend fun deleteAllMeals()
+
     @Query("SELECT * FROM Meal")
     fun getAllMeals(): Flow<List<Meal?>>
 }
