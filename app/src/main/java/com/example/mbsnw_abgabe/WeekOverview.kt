@@ -13,6 +13,8 @@ import kotlinx.coroutines.launch
 import com.example.mbsnw_abgabe.data.MealDatabase
 import java.text.SimpleDateFormat
 import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.example.mbsnw_abgabe.data.MealRepository
@@ -156,6 +158,7 @@ fun WeekBarChart(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeekOverview(mealDB: MealDatabase) {
     val repository = remember { com.example.mbsnw_abgabe.data.MealRepository(mealDB.dao) }
@@ -198,34 +201,27 @@ fun WeekOverview(mealDB: MealDatabase) {
         }
     }
 
-    Scaffold { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Wochenübersicht",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Wochenübersicht") },
+                navigationIcon = {
+                    IconButton(onClick = { /* TODO: Open drawer */ }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                    }
                 }
-            }
+            )
+        }
+    ) { innerPadding ->
 
+        Box (
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+        Column(
+            modifier = Modifier.padding(innerPadding)
+        ) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Wochen-Navigation
@@ -234,12 +230,13 @@ fun WeekOverview(mealDB: MealDatabase) {
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = {
-                    weekStart = Calendar.getInstance().apply {
-                        time = weekStart
-                        add(Calendar.DAY_OF_MONTH, -7)
-                    }.time
-                }, modifier = Modifier.weight(1f)
+                Button(
+                    onClick = {
+                        weekStart = Calendar.getInstance().apply {
+                            time = weekStart
+                            add(Calendar.DAY_OF_MONTH, -7)
+                        }.time
+                    }, modifier = Modifier.weight(1f)
                 ) { Text("<") }
                 Spacer(Modifier.width(16.dp))
                 Text(
@@ -248,12 +245,13 @@ fun WeekOverview(mealDB: MealDatabase) {
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.width(16.dp))
-                Button(onClick = {
-                    weekStart = Calendar.getInstance().apply {
-                        time = weekStart
-                        add(Calendar.DAY_OF_MONTH, 7)
-                    }.time
-                }, modifier = Modifier.weight(1f)
+                Button(
+                    onClick = {
+                        weekStart = Calendar.getInstance().apply {
+                            time = weekStart
+                            add(Calendar.DAY_OF_MONTH, 7)
+                        }.time
+                    }, modifier = Modifier.weight(1f)
                 ) { Text(">") }
             }
 
@@ -262,7 +260,7 @@ fun WeekOverview(mealDB: MealDatabase) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Card (
+            Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -303,6 +301,9 @@ fun WeekOverview(mealDB: MealDatabase) {
             ) {
                 Text("Datenbank kys")
             }
+
+        }
+
         }
     }
 }
