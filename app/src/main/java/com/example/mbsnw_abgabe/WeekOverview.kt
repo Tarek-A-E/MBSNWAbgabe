@@ -303,7 +303,7 @@ fun WeekOverview(mealDB: MealDatabase) {
                             )
                         } else {
                             Text(
-                                text = "Kalorienverbrauch pro Woche: %1f kcal".format(durchschnitt),
+                                text = "Tagesdurschnitt: %d kcal".format(durchschnitt.toInt()),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
