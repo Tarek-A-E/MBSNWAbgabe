@@ -291,7 +291,7 @@ fun TagesuebersichtScreen(
                                         text = "${meal.cal.toInt()} kcal",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
-                                    if (index == todaysMeals.lastIndex) {
+                                    todaysMeals.forEachIndexed { index, meal ->
                                         IconButton(
                                             onClick = {
                                                 CoroutineScope(Dispatchers.IO).launch {
