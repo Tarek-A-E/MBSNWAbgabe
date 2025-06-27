@@ -291,6 +291,8 @@ fun TagesuebersichtScreen(
                                         text = "${meal.cal.toInt()} kcal",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     todaysMeals.forEachIndexed { index, meal ->
                                         IconButton(
                                             onClick = {
