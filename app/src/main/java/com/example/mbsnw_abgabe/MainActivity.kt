@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -273,21 +274,38 @@ fun TagesuebersichtScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        todaysMeals.forEach { meal ->
+                        todaysMeals.forEachIndexed { index, meal ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = meal.name,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
-                                Text(
-                                    text = "${meal.cal.toInt()} kcal",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "${meal.cal.toInt()} kcal",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    if (index == todaysMeals.lastIndex) {
+                                        IconButton(
+                                            onClick = {
+                                                CoroutineScope(Dispatchers.IO).launch {
+                                                    repository.deleteMeal(meal)
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Letzte Mahlzeit löschen"
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
