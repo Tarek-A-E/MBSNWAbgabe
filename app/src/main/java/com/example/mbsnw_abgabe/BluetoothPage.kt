@@ -23,8 +23,16 @@ import androidx.compose.material3.Card
 import androidx.compose.runtime.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BluetoothPage() {
 
@@ -41,7 +49,16 @@ fun BluetoothPage() {
     }
 
     // Bluetooth Page UI and
-    Scaffold() { innerPadding ->
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { Text("Bluetooth") },
+            navigationIcon = {
+                IconButton(onClick = { /* TODO: Open drawer */ }) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                }
+            }
+        )
+    }) { innerPadding ->
         Column (
             modifier = Modifier
                 .padding(innerPadding)

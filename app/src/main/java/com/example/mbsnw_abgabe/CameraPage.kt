@@ -1,6 +1,7 @@
 package com.example.mbsnw_abgabe
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,9 +19,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +57,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraPage(mealDB: MealDatabase,navController: NavController, onMealScanned: (Meal) -> Unit) {
     val context = LocalContext.current
@@ -98,111 +108,122 @@ fun CameraPage(mealDB: MealDatabase,navController: NavController, onMealScanned:
     val barcodeScanner = remember { BarcodeScanning.getClient() }
 
     var hasScanned by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Barcode-Scanner",
-            style = MaterialTheme.typography.titleLarge
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { Text("Scan") },
+            navigationIcon = {
+                IconButton(onClick = { /* TODO: Open drawer */ }) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                }
+            }
         )
-
-        Box(
+    }) {
+        (Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 16.dp)
-                .fillMaxWidth()
-                .height(400.dp)
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (hasPermission && !hasScanned) {  // Only show scanner if not yet scanned
-                AndroidView(
-                    factory = { context ->
-                        val previewView = PreviewView(context)
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .fillMaxWidth()
+                    .height(400.dp)
+            ) {
+                if (hasPermission && !hasScanned) {  // Only show scanner if not yet scanned
+                    AndroidView(
+                        factory = { context ->
+                            val previewView = PreviewView(context)
 
-                        cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
-                            val preview = Preview.Builder().build().also {
-                                it.setSurfaceProvider(previewView.surfaceProvider)
-                            }
+                            cameraProviderFuture.addListener({
+                                val cameraProvider = cameraProviderFuture.get()
+                                val preview = Preview.Builder().build().also {
+                                    it.setSurfaceProvider(previewView.surfaceProvider)
+                                }
 
-                            val imageAnalyzer = ImageAnalysis.Builder()
-                                .build()
-                                .also { analysis ->
-                                    analysis.setAnalyzer(
-                                        ContextCompat.getMainExecutor(context),
-                                        MlKitAnalyzer(
-                                            listOf(barcodeScanner),
-                                            ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL,
-                                            ContextCompat.getMainExecutor(context)
-                                        ) { result ->
-                                            if (!hasScanned) {  // Only process if not yet scanned
-                                                val barcodeResults = result.getValue(barcodeScanner)
-                                                if (barcodeResults != null && barcodeResults.isNotEmpty()) {
-                                                    val barcode = barcodeResults[0]
-                                                    val scannedValue = barcode.rawValue
-                                                    if (scannedValue != null) {
-                                                        val mealTemplate = barcodeToMeal[scannedValue]
-                                                        if (mealTemplate != null) {
-                                                            val scannedMeal = mealTemplate.copy(
-                                                                date = dateFormat.format(Date())
-                                                            )
-                                                            scope.launch(Dispatchers.IO) {
-                                                                try {
-                                                                    onMealScanned(scannedMeal)
-                                                                    hasScanned = true  // Mark as scanned
-                                                                    // Navigate back after successful scan
-                                                                    scope.launch(Dispatchers.Main) {
-                                                                        navController.navigate("home")
+                                val imageAnalyzer = ImageAnalysis.Builder()
+                                    .build()
+                                    .also { analysis ->
+                                        analysis.setAnalyzer(
+                                            ContextCompat.getMainExecutor(context),
+                                            MlKitAnalyzer(
+                                                listOf(barcodeScanner),
+                                                ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL,
+                                                ContextCompat.getMainExecutor(context)
+                                            ) { result ->
+                                                if (!hasScanned) {  // Only process if not yet scanned
+                                                    val barcodeResults =
+                                                        result.getValue(barcodeScanner)
+                                                    if (barcodeResults != null && barcodeResults.isNotEmpty()) {
+                                                        val barcode = barcodeResults[0]
+                                                        val scannedValue = barcode.rawValue
+                                                        if (scannedValue != null) {
+                                                            val mealTemplate =
+                                                                barcodeToMeal[scannedValue]
+                                                            if (mealTemplate != null) {
+                                                                val scannedMeal = mealTemplate.copy(
+                                                                    date = dateFormat.format(Date())
+                                                                )
+                                                                scope.launch(Dispatchers.IO) {
+                                                                    try {
+                                                                        onMealScanned(scannedMeal)
+                                                                        hasScanned =
+                                                                            true  // Mark as scanned
+                                                                        // Navigate back after successful scan
+                                                                        scope.launch(Dispatchers.Main) {
+                                                                            navController.navigate("home")
+                                                                        }
+                                                                    } catch (e: Exception) {
+                                                                        Log.e(
+                                                                            "Database",
+                                                                            "Error adding meal: ${e.message}"
+                                                                        )
                                                                     }
-                                                                } catch (e: Exception) {
-                                                                    Log.e("Database", "Error adding meal: ${e.message}")
                                                                 }
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
-                                        }
+                                        )
+                                    }
+
+                                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                                try {
+                                    cameraProvider.unbindAll()
+                                    cameraProvider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        cameraSelector,
+                                        preview,
+                                        imageAnalyzer
                                     )
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
+                            }, ContextCompat.getMainExecutor(context))
 
-                            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                            try {
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    cameraSelector,
-                                    preview,
-                                    imageAnalyzer
-                                )
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }, ContextCompat.getMainExecutor(context))
-
-                        previewView
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else if (hasScanned) {
-                Text("Barcode successfully scanned!")
-            } else {
-                Text("Kamera-Berechtigung nicht erteilt.")
-            }
-        }
-
-        Button(
-            onClick = {
-                if (!hasPermission) {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                            previewView
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (hasScanned) {
+                    Text("Barcode successfully scanned!")
+                } else {
+                    Text("Kamera-Berechtigung nicht erteilt.")
                 }
             }
-        ) {
-            Text(if (hasPermission) "📷 Scanning..." else "📷 Kamera aktivieren")
-        }
+
+            Button(
+                onClick = {
+                    if (!hasPermission) {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                }
+            ) {
+                Text(if (hasPermission) "📷 Scanning..." else "📷 Kamera aktivieren")
+            }
+        })
     }
 }
