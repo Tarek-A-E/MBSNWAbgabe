@@ -244,90 +244,89 @@ fun WeekOverview(mealDB: MealDatabase) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-        Column(
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Wochen-Navigation
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier.padding(innerPadding)
             ) {
-                Button(
-                    onClick = {
-                        weekStart = Calendar.getInstance().apply {
-                            time = weekStart
-                            add(Calendar.DAY_OF_MONTH, -7)
-                        }.time
-                    }, modifier = Modifier.weight(1f)
-                ) { Text("<") }
-                Spacer(Modifier.width(16.dp))
-                Text(
-                    "${dateFormat.format(weekStart)} - ${dateFormat.format(weekEnd)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.width(16.dp))
-                Button(
-                    onClick = {
-                        weekStart = Calendar.getInstance().apply {
-                            time = weekStart
-                            add(Calendar.DAY_OF_MONTH, 7)
-                        }.time
-                    }, modifier = Modifier.weight(1f)
-                ) { Text(">") }
-            }
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-            WeekBarChart(caloriesPerDay, scope, repository)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Wochen-Navigation
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    if (durchschnitt == 0.0 || durchschnitt.isNaN()) {
-                        Text(
-                            text = "Keine Mahlzeiten eingetragen.",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    } else {
-                        Text(
-                            text = "Kalorienverbrauch pro Woche: %1f kcal".format(durchschnitt),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Button(
+                        onClick = {
+                            weekStart = Calendar.getInstance().apply {
+                                time = weekStart
+                                add(Calendar.DAY_OF_MONTH, -7)
+                            }.time
+                        }, modifier = Modifier.weight(1f)
+                    ) { Text("<") }
+                    Spacer(Modifier.width(16.dp))
+                    Text("${dateFormat.format(weekStart)} - ${dateFormat.format(weekEnd)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Button(
+                        onClick = {
+                            weekStart = Calendar.getInstance().apply {
+                                time = weekStart
+                                add(Calendar.DAY_OF_MONTH, 7)
+                            }.time
+                        }, modifier = Modifier.weight(1f)
+                    ) { Text(">") }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                WeekBarChart(caloriesPerDay, scope, repository)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (durchschnitt == 0.0 || durchschnitt.isNaN()) {
+                            Text(
+                                text = "Keine Mahlzeiten eingetragen.",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Text(
+                                text = "Kalorienverbrauch pro Woche: %1f kcal".format(durchschnitt),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = {
+                        scope.launch {
+                            repository.deleteAllMeals()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text("Datenbank kys")
+                }
+
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        repository.deleteAllMeals()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            ) {
-                Text("Datenbank kys")
-            }
-
-        }
 
         }
     }
