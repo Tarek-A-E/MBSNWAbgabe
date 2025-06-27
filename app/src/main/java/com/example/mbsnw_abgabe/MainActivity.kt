@@ -293,19 +293,17 @@ fun TagesuebersichtScreen(
                                     )
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    todaysMeals.forEachIndexed { index, meal ->
-                                        IconButton(
-                                            onClick = {
-                                                CoroutineScope(Dispatchers.IO).launch {
-                                                    repository.deleteMeal(meal)
-                                                }
+                                    IconButton(
+                                        onClick = {
+                                            CoroutineScope(Dispatchers.IO).launch {
+                                                repository.deleteMeal(meal)
                                             }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "Letzte Mahlzeit löschen"
-                                            )
                                         }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Letzte Mahlzeit löschen"
+                                        )
                                     }
                                 }
                             }
@@ -313,6 +311,7 @@ fun TagesuebersichtScreen(
                     }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(32.dp))
 
