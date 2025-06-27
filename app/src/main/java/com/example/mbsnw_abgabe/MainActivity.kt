@@ -320,7 +320,7 @@ fun TagesuebersichtScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                ActionButton(text = "📷  Scan", onClick = { onScanClick() })
+                ActionButton(text = "📷  Scanner", onClick = { onScanClick() })
                 ActionButton(text = "🔵  Bluetooth", onClick = { onBluetoothClick() })
                 ActionButton(text = "📅  Wochenübersicht", onClick = { onWeeklyClick() })
             }

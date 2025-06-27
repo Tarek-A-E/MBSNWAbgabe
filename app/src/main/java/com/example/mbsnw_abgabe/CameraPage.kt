@@ -110,7 +110,7 @@ fun CameraPage(mealDB: MealDatabase,navController: NavController, onMealScanned:
     var hasScanned by remember { mutableStateOf(false) }
     Scaffold(topBar = {
         TopAppBar(
-            title = { Text("Scan") },
+            title = { Text("Scanner") },
             navigationIcon = {
                 IconButton(onClick = { /* TODO: Open drawer */ }) {
                     Icon(Icons.Default.Menu, contentDescription = "Menu")
