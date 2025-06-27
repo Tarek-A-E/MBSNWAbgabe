@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.room.Room
+import com.example.mbsnw_abgabe.data.GoalPreferences
 import com.example.mbsnw_abgabe.data.Meal
 import com.example.mbsnw_abgabe.data.MealDatabase
 import com.example.mbsnw_abgabe.data.MealRepository
@@ -52,14 +53,13 @@ import com.example.mbsnw_abgabe.ui.theme.MBSNWAbgabeTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import com.example.mbsnw_abgabe.data.MealDao
+import kotlinx.coroutines.*
+import androidx.compose.ui.platform.LocalContext
 
 
 class MainActivity : ComponentActivity() {
     private lateinit var database: MealDatabase
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -95,6 +95,8 @@ fun TagesuebersichtScreen(
     var showGoalDialog by remember { mutableStateOf(false) }
     var newGoalInput by remember { mutableStateOf("") }
 
+    val context = LocalContext.current
+
     // Get today's date in the correct format
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val today = dateFormat.format(Date())
@@ -123,6 +125,13 @@ fun TagesuebersichtScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        // Load goal from preferences
+        GoalPreferences.getGoal(context).collect { goal ->
+            goalCalories = goal
+        }
+    }
+
     val remainingCalories = goalCalories - usedCalories
     val progress = (usedCalories / goalCalories.toFloat()).coerceIn(0f, 1f)
 
@@ -142,7 +151,11 @@ fun TagesuebersichtScreen(
             confirmButton = {
                 Button(onClick = {
                     newGoalInput.toIntOrNull()?.let {
-                        if (it > 0) goalCalories = it
+                        if (it > 0) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                GoalPreferences.setGoal(context, it)
+                            }
+                        }
                     }
                     showGoalDialog = false
                     newGoalInput = ""
@@ -171,12 +184,13 @@ fun TagesuebersichtScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showGoalDialog = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Ziel setzen")
+                    IconButton(onClick = { /* TODO: Open settings */ }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 }
             )
         }
+
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -220,6 +234,16 @@ fun TagesuebersichtScreen(
                         trackColor = MaterialTheme.colorScheme.background
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { showGoalDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(text = "Ziel setzen", fontSize = 16.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
