@@ -51,12 +51,12 @@ import java.util.Locale
 fun WeekBarChart(
     caloriesPerDay: Map<String, Double>,
     scope: CoroutineScope,
-    repository: MealRepository
+    repository: MealRepository,
+    weekStart: java.util.Date
 ) {
     val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val calendar = Calendar.getInstance()
-    calendar.firstDayOfWeek = Calendar.MONDAY
-    calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    val calendar = Calendar.getInstance().apply {time = weekStart}
+
     val daysOfWeek = (0..6).map {
         val date = format.format(calendar.time)
         calendar.add(Calendar.DAY_OF_MONTH, 1)
@@ -216,9 +216,10 @@ fun WeekOverview(mealDB: MealDatabase) {
     LaunchedEffect(weekStart) {
         scope.launch {
             repository.getAllMeals().collect { meals ->
+                val startStr = isoFormat.format(weekStart)
+                val endStr = isoFormat.format(weekEnd)
                 val filtered = meals.filterNotNull().filter { meal ->
-                    val mealDate = isoFormat.parse(meal.date)
-                    mealDate != null && !mealDate.before(weekStart) && !mealDate.after(weekEnd)
+                    meal.date >= startStr && meal.date <= endStr
                 }
                 val grouped = filtered.groupBy { it.date }
                 caloriesPerDay = grouped.mapValues { it.value.sumOf { meal -> meal.cal } }
@@ -280,7 +281,7 @@ fun WeekOverview(mealDB: MealDatabase) {
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                WeekBarChart(caloriesPerDay, scope, repository)
+                WeekBarChart(caloriesPerDay, scope, repository, weekStart)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -323,7 +324,7 @@ fun WeekOverview(mealDB: MealDatabase) {
                         .fillMaxWidth()
                         .padding(bottom = 16.dp)
                 ) {
-                    Text("Datenbank kys")
+                    Text("Alle Einträge löschen")
                 }
 
             }
